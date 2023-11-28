@@ -1,9 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Date;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class ToDoListApp extends JFrame {
     private JComboBox<String> taskTypeComboBox;
@@ -16,7 +14,6 @@ public class ToDoListApp extends JFrame {
     private JTextField arrivalAirportField;
     private JTextField flightTimeField;
 
-    // Labels corresponding to fields
     private JLabel celebrantNameLabel;
     private JLabel locationLabel;
     private JLabel participantsLabel;
@@ -27,6 +24,15 @@ public class ToDoListApp extends JFrame {
     public ToDoListApp() {
         super("To-Do List App");
 
+        initializeUI();
+
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        pack();
+        setLocationRelativeTo(null);
+        setVisible(true);
+    }
+
+    private void initializeUI() {
         taskTypeComboBox = new JComboBox<>(new String[]{"Birthday", "Business Meeting", "Flight"});
         taskTypeComboBox.setSelectedItem("Birthday");
         dateTimeField = new JTextField();
@@ -45,20 +51,10 @@ public class ToDoListApp extends JFrame {
         arrivalAirportLabel = new JLabel("Arrival Airport:");
         flightTimeLabel = new JLabel("Flight Time:");
 
-        taskTypeComboBox.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showFieldsForSelectedTaskType();
-            }
-        });
+        taskTypeComboBox.addActionListener(e -> showFieldsForSelectedTaskType());
 
         JButton saveButton = new JButton("Save");
-        saveButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                saveTask();
-            }
-        });
+        saveButton.addActionListener(e -> saveTask());
 
         JPanel panel = new JPanel(new GridLayout(0, 2));
         panel.add(new JLabel("Task Type:"));
@@ -84,20 +80,12 @@ public class ToDoListApp extends JFrame {
         add(panel);
 
         showFieldsForSelectedTaskType();
-
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        pack();
-        setLocationRelativeTo(null);
-        setVisible(true);
     }
 
     private void showFieldsForSelectedTaskType() {
         String selectedTaskType = (String) taskTypeComboBox.getSelectedItem();
-
-        // Hide all fields and labels initially
         hideAllFieldsAndLabels();
 
-        // Show fields and labels based on the selected task type
         switch (selectedTaskType) {
             case "Birthday":
                 celebrantNameLabel.setVisible(true);
@@ -137,52 +125,48 @@ public class ToDoListApp extends JFrame {
     }
 
     private void saveTask() {
-        // Implement the logic to save the task
         String selectedTaskType = (String) taskTypeComboBox.getSelectedItem();
 
-        // Check if all required fields are filled
-        if (!areAllFieldsFilled(selectedTaskType)) {
-            JOptionPane.showMessageDialog(this, "Please fill in all required fields.", "Error", JOptionPane.ERROR_MESSAGE);
-            return; // Stop execution if fields are not filled
+        if (dateTimeField.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter date and time.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
-        // Validate date format
+        if (!areAllFieldsFilled(selectedTaskType)) {
+            JOptionPane.showMessageDialog(this, "Please fill in all required fields.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         Date taskDate;
         try {
             taskDate = parseDate(dateTimeField.getText());
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Invalid date format. Please enter a valid date.", "Error", JOptionPane.ERROR_MESSAGE);
-            return; // Stop execution if date format is invalid
+            return;
         }
 
-        // Create a task object based on the selected task type and save it
         try {
-            switch (selectedTaskType) {
-                case "Birthday":
-                    BirthdayTask birthdayTask = new BirthdayTask(taskDate,
-                            (Priority) priorityComboBox.getSelectedItem(), celebrantNameField.getText());
-                    System.out.println(birthdayTask);
-                    break;
-                case "Business Meeting":
-                    BusinessMeetingTask meetingTask = new BusinessMeetingTask(taskDate,
-                            (Priority) priorityComboBox.getSelectedItem(), locationField.getText(),
-                            participantsField.getText());
-                    System.out.println(meetingTask);
-                    break;
-                case "Flight":
-                    FlightTask flightTask = new FlightTask(taskDate,
-                            (Priority) priorityComboBox.getSelectedItem(), departureAirportField.getText(),
-                            arrivalAirportField.getText(), flightTimeField.getText());
-                    System.out.println(flightTask);
-                    break;
-            }
+            Task task = createTask(selectedTaskType, taskDate, (Priority) priorityComboBox.getSelectedItem());
+            System.out.println(task);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "An error occurred while processing the task. Please try again.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error processing the task: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
+    private Task createTask(String selectedTaskType, Date taskDate, Priority priority) throws Exception {
+        switch (selectedTaskType) {
+            case "Birthday":
+                return new BirthdayTask(taskDate, priority, celebrantNameField.getText());
+            case "Business Meeting":
+                return new BusinessMeetingTask(taskDate, priority, locationField.getText(), participantsField.getText());
+            case "Flight":
+                return new FlightTask(taskDate, priority, departureAirportField.getText(),
+                        arrivalAirportField.getText(), flightTimeField.getText());
+            default:
+                throw new IllegalArgumentException("Unknown task type: " + selectedTaskType);
+        }
+    }
 
-    // Helper method to check if all required fields are filled
     private boolean areAllFieldsFilled(String taskType) {
         switch (taskType) {
             case "Birthday":
@@ -194,18 +178,14 @@ public class ToDoListApp extends JFrame {
                         && !arrivalAirportField.getText().trim().isEmpty()
                         && !flightTimeField.getText().trim().isEmpty();
             default:
-                return true; // Default to true for unknown task types
+                return true;
         }
     }
 
-    // Helper method to parse and validate the date
     private Date parseDate(String dateStr) throws Exception {
-        // Implement the logic to parse the date
-        // You may use SimpleDateFormat or another date parsing method
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm"); // Adjust the format as needed
-        dateFormat.setLenient(false); // Disable lenient parsing
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+        dateFormat.setLenient(false);
 
-        return dateFormat.parse(dateStr); // This will throw ParseException if the date is invalid
+            return dateFormat.parse(dateStr);
     }
-
 }
